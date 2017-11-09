@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - arraycamera</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				margin: 0px;
+				background-color: #000000;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+
+		<script src="../build/three.js"></script>
+
+		<script>
+			var camera, scene, renderer;
+			var mesh = [];
+			var boltar = 10;
+			var cage = [1000,1000,1000];
+			var radiusinn = 0.2;
+			var sped = 0.8;
+			var expantion = 2;
+			var exeleration=[];//z
+			var shipSpeed = [-1,0,0];
+
+			  for (var i = 0; i < boltar; i++) {
+			  	exeleration.push([]);
+			  	for (var k = 0; k < 3; k++) {
+			  		exeleration[i][k] = -sped*expantion+Math.random()*2*expantion*sped;
+			  	}
+			  }
+
+
+			init();
+			animate();
+
+			function init() {
+
+				var AMOUNT = 1;
+				var SIZE = 1 / AMOUNT;
+				var ASPECT_RATIO = window.innerWidth / window.innerHeight;
+
+				var cameras = [];
+
+						camera = new THREE.PerspectiveCamera( 40, ASPECT_RATIO, 0.1, 2000 );
+						camera.bounds = new THREE.Vector4( 0, 0, 1, 1 );
+						camera.position.x = 100;
+						camera.position.y = 0;
+						camera.position.z = 0;
+						camera.position.multiplyScalar( 2 );
+						camera.lookAt( new THREE.Vector3() );
+						camera.updateMatrixWorld();
+
+				scene = new THREE.Scene();				//create a scene
+
+				scene.add( new THREE.AmbientLight( 0x222244 ) );
+
+				var light = new THREE.DirectionalLight();//create light
+				light.position.set( -100, -100, -100 );		//light possition
+				light.castShadow = true;				//casts shadow
+				light.shadow.camera.zoom = 4; 			// tighter shadow map
+				scene.add( light );						// add it to the scene
+
+				var texture = new THREE.TextureLoader().load( "KonradGudmundsson.jpg" );
+				texture.repeat.set( 4, 4 );
+
+				var geometry = new THREE.BoxGeometry(cage[0], cage[1], cage[2],32,32,32);
+				var material = new THREE.MeshPhongMaterial( { color: 0x776536, wireframe: true } );//background color
+
+				var background = new THREE.Mesh( geometry, material );
+				background.receiveShadow = true;//does backround take shadow?
+				background.position.set( 0, 0, 0);//background possition
+				scene.add( background );
+
+				var geometry = new THREE.SphereGeometry( radiusinn, 32, 32 );
+
+				var material = new THREE.MeshPhongMaterial( { color: 0xffffff } );	//shape metirial color
+
+				for (var i = 0; i < boltar; i++) {
+
+					mesh[i] = new THREE.Mesh( geometry, material );
+					mesh[i].castShadow = true;
+					mesh[i].receiveShadow = true;
+					mesh[i].position.z=5;
+					scene.add( mesh[i] );
+				}
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.shadowMap.enabled = true;
+				document.body.appendChild( renderer.domElement );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function move(target,movement)
+			{
+				target.position.x+=movement[0];
+				target.position.z+=movement[1];
+				target.position.y+=movement[2];
+			}
+			var myVector = new THREE.Vector3( 0, 0, 0 );
+			var run = true;
+			function animate() {
+				if (run==true) 
+				{
+					for (var i = 0; i < boltar; i++) {
+						move(mesh[i],exeleration[i]);
+
+						if (Math.abs(mesh[i].position.x)+radiusinn>cage[0]/2) {exeleration[i][0]=-1*exeleration[i][0];}
+						if (Math.abs(mesh[i].position.z)+radiusinn>cage[1]/2) {exeleration[i][1]=-1*exeleration[i][1];}
+						if (Math.abs(mesh[i].position.y)+radiusinn>cage[2]/2) {exeleration[i][2]=-1*exeleration[i][2];}
+					}
+				}
+
+				camera.position.x+=camera.getWorldDirection().x*sped;
+				camera.position.z+=camera.getWorldDirection().z*sped;
+				camera.position.y+=camera.getWorldDirection().y*sped;
+
+				renderer.render( scene, camera );
+
+				requestAnimationFrame( animate );
+
+			}
+
+
+			function setSpeed(newSpeed)
+			{
+				if (sped == 0) {sped = 1};
+				for (var i = 0; i < boltar; i++) 
+				{
+					for (var k = 0; k < 3; k++) {
+						exeleration[i][k]=exeleration[i][k]*(newSpeed/sped);
+					};
+				}
+				sped = newSpeed;
+			}
+
+			window.addEventListener("devicemotion", function(event){
+		    if(event.rotationRate.alpha || event.rotationRate.beta || event.rotationRate.gamma)
+		    	var hlutfall = Math.PI/180;
+		    	camera.rotateX(event.rotationRate.alpha*hlutfall);
+	    		camera.rotateY(event.rotationRate.beta*hlutfall);
+	    		camera.rotateZ(event.rotationRate.gamma*hlutfall);
+			});
+
+		</script>
+
+	</body>
+</html>
